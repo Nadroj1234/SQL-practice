@@ -5,7 +5,7 @@
 
 drop table if exists employees;
 create table employees (
-	employee_id INT,
+	employee_id INT primary key,
     first_name varchar(50) /* we want this to be a string but SQL has 2 text types: char and varchar */,
     last_name varchar(50),
     hourly_pay decimal(5,2),
