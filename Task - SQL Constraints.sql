@@ -19,6 +19,9 @@ use cmp_joklemm;
 --     • A column for email that can be left empty for now.
 --   Then insert at least three students without providing their ID numbers.
 --   Finally, SELECT all rows to verify IDs are automatically assigned.
+
+drop table if exists students;
+
 create table students(
 	studnt_id int primary key auto_increment,
     first_name varchar(50) not null,
@@ -118,7 +121,8 @@ create table students(
     email varchar(50) unique not null
 );
 
-insert into students (first_name, last_name, email) values ("james", "clark", null);
+insert into students (first_name, last_name, email) values ("james", "clark");
+
 
 -- C2) Create a table named courses with:
 --     • A column for a course code (short text) that serves as the primary key.
@@ -155,9 +159,15 @@ drop table if exists courses;
 create table courses (
 	course_code varchar(10) primary key,
     title text not null,
-    credit_amount int not null,
+    credit int not null,
 	constraint chk_credit CHECK (credit >= 1 and credit <= 6)
 );
+
+insert into courses values ("M7", "Math 7", 5);
+
+-- insert into courses values ("M7", "Math 7", 12);
+
+select * from courses;
 
 -- D2) Create a table named devices with:
 --     • A column for asset_tag that should be a unique identifier and act as the primary key.
@@ -166,7 +176,24 @@ create table courses (
 --   Add a rule that only allows specific device types (for example, laptop, tablet, router).
 --   Insert one valid record for each allowed type, then insert one with an invalid type to see the constraint in action.
 
+drop table if exists devices;
 
+create table devices (
+	asset_tag int unique primary key,
+	device_status varchar(50) default "in_stock",
+    typ varchar(50) not null,
+    constraint chk_typ CHECK (typ = "laptop" or typ = "router" or typ = "tablet")
+);
+
+insert into devices values (2780, "not in stock", "laptop");
+
+insert into devices  values (3564 ,  "not in stock", "tablet");
+
+insert into devices  values (1835 , "in stock", "router");
+
+-- insert into devices  values (3906, "in stock", "switch");
+
+select * from devices;
 
 /* ============================================================
    Part E — DEFAULT
@@ -176,6 +203,7 @@ create table courses (
 -- E1) Add a new record to the devices table, leaving out the status column.
 --     Verify that the status automatically fills in with the default value.
 
+insert into devices (asset_tag, typ) values (2393 , "tablet");
 
 
 -- E2) Create a table named tickets with:
@@ -185,7 +213,19 @@ create table courses (
 --     • A column for priority that defaults to a typical value like “normal”.
 --   Insert at least two tickets without specifying all columns and confirm the defaults are applied.
 
+drop table if exists tickets;
 
+create table tickets (
+	ticket_id int primary key auto_increment,
+    subjct varchar(10) not null,
+    opened_at datetime default current_timestamp,
+    priority varchar(50) default "normal"
+);
+
+insert into tickets (subjct) values ("homework");
+insert into tickets (subjct) values ("chore");
+
+select * from tickets;
 
 /* ============================================================
    Part F — FOREIGN KEY
@@ -200,13 +240,35 @@ create table courses (
 --   Add foreign key constraints linking asset_tag and student_id to their respective parent tables.
 --   Insert one valid record and one that references a non-existent asset_tag to test the foreign key protection.
 
+drop table if exists checkouts;
+
+create table checkouts(
+	checkout_id int primary key auto_increment,
+    asset_tag int,
+    student_id int,
+    due_date datetime,
+	foreign key (asset_tag) references devices(asset_tag),
+	foreign key (student_id) references students(studnt_id)
+);
+
+insert into checkouts (asset_tag, student_id, due_date) values (2780, 1, '2025-06-07');
+
+-- insert into checkouts(asset_tag, student_id, due_date) values (8989, 1, "2025-06-07");
+
+select * from checkouts;
 
 
 -- F2) Try deleting a student who is still listed in the checkouts table.
 --     Note what error appears and explain why.
 --     Then delete the related checkout record and delete the student successfully.
 
+delete from students where student_id =1;
 
+-- Error Code: 1054. Unknown column 'student_id' in 'where clause'.
+
+delete from checkouts where student_id =1;
+
+delete from students where student_id = 1;
 
 /* ============================================================
    Part G — Mixed Practice Mini-Scenarios
@@ -221,7 +283,28 @@ create table courses (
 --   Insert two valid clubs.
 --   Then attempt one with a duplicate name and one with a negative budget, and note what happens.
 
+drop table if exists clubs;
 
+create table clubs(
+	club_id int primary key auto_increment,
+    club_name varchar(50) not null unique,
+    advisor_email text not null,
+    budget decimal(7,2) default 0.00,
+    constraint chk_budget CHECK (budget >= 0)
+);
+
+insert into clubs (club_name, advisor_email, budget) values ("penguin", "penguin@gmail.com", 4.24);
+
+insert into clubs (club_name, advisor_email, budget) values ("Penn State", "pennstate@gmail.com", 1369.53);
+
+insert into clubs (club_name, advisor_email, budget) values ("penguin", "ert@gmail.com", 234.55);
+-- Error Code 1062. Duplicate entry 'penguin' for key 'clubs.club_name'
+
+insert into clubs (club_name, advisor_email, budget) values ("n", "ert@gmail.com", -234.55);
+-- Error Code 3819. Check constraint 'chk_budget' is violated
+
+
+select * from clubs;
 
 -- G2) Create a table named memberships with:
 --     • A column for membership_id that should be an integer, act as the primary key, and auto-increment.
@@ -230,5 +313,20 @@ create table courses (
 --   Add a rule that prevents the same student from joining the same club more than once.
 --   Insert one valid membership, then try inserting the same student/club pair again to test the rule.
 
+drop table if exists memberships;
 
+create table memberships (
+	membership_id int primary key auto_increment,
+    student_id int,
+    club_id int,
+	foreign key (student_id) references students(studnt_id),
+	foreign key (club_id) references clubs(club_id),
+	constraint unique_student_club unique (student_id, club_id)
+);
+
+insert into memberships (student_id, club_id) values (1, 2);
+
+-- insert into memberships (student_id, club_id) values (1, 2);
+
+select * from memberships;
 
